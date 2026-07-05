@@ -29,12 +29,12 @@ Applies to all projects — primarily **Python** and **Bash**.
 
 ## Code Quality Rules
 
-- **Small functions** – Do one thing; if it needs a comment to explain what it does, extract it.
-- **DRY** – Extract repeated logic; never copy-paste blocks.
+- **Small functions** – Do one thing; if it needs a comment to explain what it does, extract it (→ see *Bloaters*).
+- **DRY** – Extract repeated logic; never copy-paste blocks (→ see *Duplicated code*).
 - **Fail fast** – Validate inputs at boundaries; raise explicit errors early.
 - **Explicit error handling** – Never swallow exceptions; use typed exceptions in Python.
 - **No magic numbers/strings** – Name all constants.
-- **Structured logging** – Use `logging` (Python) or `logger` functions (Bash); never raw `print`/`echo` for diagnostics.
+- **Structured logging** – Use `logging` (Python) or `logger` functions (Bash); never raw `print`/`echo`.
 - **Config externalization** – `.env`, `pyproject.toml`, or config files; never hardcode secrets or paths.
 - **Immutability by default** – Prefer `tuple`/`frozenset` in Python; `readonly` in Bash where practical.
 
@@ -42,7 +42,7 @@ Applies to all projects — primarily **Python** and **Bash**.
 
 ## Code Smells to Avoid
 
-- **Bloaters** – Long functions (>20 lines), large classes, >3 function parameters.
+- **Bloaters** – Functions >20 lines, classes with multiple responsibilities, >3 parameters.
 - **Duplicated code** – Apply extract-function/method immediately.
 - **God object** – One class doing everything; split by responsibility.
 - **Feature envy** – Method uses another class's data more than its own; move it.
@@ -57,14 +57,32 @@ Applies to all projects — primarily **Python** and **Bash**.
 
 Every non-trivial task follows this sequence. Do not skip steps.
 
-1. **Plan** – Use `todowrite` to break the task into discrete steps before touching any file. For heavy multi-phase work, activate the `/deepwork` skill.
+1. **Plan** – Use `todowrite` to break the task into discrete steps before touching any file. For heavy multi-phase work, activate `/deepwork`.
 2. **Read first** – Read all relevant files before proposing changes. Never modify code you haven't read. Delegate broad discovery to `@explorer`.
-3. **Execute** – Edit files using `edit` (prefer over `write` for existing files). One responsibility per change. Delegate bounded implementation to `@fixer`; delegate UI/UX work to `@designer`.
-4. **Test** – Run existing tests. Add tests for new behaviour. Tests must pass before proceeding.
-5. **Verify** – For 3+ file edits or any backend/API change, delegate review to `@oracle` via the `task` tool. Only proceed on `PASS`.
-6. **Simplify** – Run the `/simplify` skill on changed code to catch smells and redundancy.
+3. **Execute** – Edit with `edit` (prefer over `write`). One responsibility per change. Delegate bounded implementation to `@fixer`; UI/UX to `@designer`.
+4. **Test** – Run existing tests; add new ones for new behaviour. Tests must pass before proceeding.
+5. **Verify** – For 3+ file edits or any backend/API change, delegate review to `@oracle` via `task`. Skip for single-file, docs-only, or config-only changes. Only proceed on PASS.
+6. **Simplify** – Run `/simplify` on changed code to catch smells and redundancy.
 7. **Commit** – Small atomic commits using Conventional Commits format (see below).
 8. **Document** – Update docstrings, README, and config comments affected by the change.
+
+**Failure recovery**: If tests fail, fix the root cause — not the symptom. If `@oracle` flags issues, address them and re-test; never bypass review to ship broken code. If a request is ambiguous, ask the user before acting.
+
+---
+
+## Session Lifecycle
+
+- **Start** — Read MCP Memory for user/project context. Check `git status` for prior uncommitted work.
+- **During** — Store key decisions and preferences to MCP Memory as they emerge. Report progress briefly while background jobs run; pause if a result invalidates earlier assumptions.
+- **End** — Update MCP Memory with session outcomes. Verify tests pass, lint clean, no secrets staged.
+
+---
+
+## Communication
+
+- Be concise; no sycophancy, no filler phrases, no unsolicited praise.
+- No emojis unless the user explicitly requests them.
+- Use GitHub-flavoured Markdown for structure; prefer tables and bullets over prose.
 
 ---
 
@@ -77,7 +95,7 @@ Every non-trivial task follows this sequence. Do not skip steps.
 [optional footer: breaking changes, issue refs]
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`
+Types: `feat` · `fix` · `refactor` · `test` · `docs` · `chore` · `ci`
 
 Examples:
 ```
@@ -123,8 +141,9 @@ refactor(utils): extract validate_path into separate module
 
 ---
 
-## Python-Specific Practices
+## Language Practices
 
+### Python
 - **Virtual environments** – Always use `venv` or `uv`; never install globally.
 - **Dependency management** – `pyproject.toml` as the single source of truth; pin versions in `requirements.lock` if needed.
 - **Type hints** – Add to all public functions; run `mypy --strict` in CI.
@@ -133,8 +152,7 @@ refactor(utils): extract validate_path into separate module
 - **Docstrings** – Google style for all public functions, classes, and modules.
 - **Dataclasses/Pydantic** – Prefer over raw dicts for structured data.
 
-## Bash-Specific Practices
-
+### Bash
 - **Shebang** – Always `#!/usr/bin/env bash`.
 - **Strict mode** – Every script starts with `set -euo pipefail`.
 - **Shellcheck** – All scripts must pass `shellcheck` with no warnings.
@@ -167,60 +185,58 @@ refactor(utils): extract validate_path into separate module
 | Edit an existing file | `edit` (prefer over `write`) |
 | Create a new file | `write` |
 | Run shell commands | `bash` |
-| Delegate to a specialist | `task` (see OMO-slim specialists below) |
+| Delegate to a specialist | `task` (see Specialists below) |
 | Clean up changed code | `/simplify` skill |
 | Heavy multi-phase sessions | `/deepwork` skill |
 | Risky or parallel work | `/worktrees` skill |
 | Learn from past sessions | `/reflect` skill |
 | Map an unfamiliar codebase | `/codemap` skill |
 | Inspect dependency internals | `/clonedeps` skill |
+| Read user/project memory | `memory_search_nodes`, `memory_open_nodes` |
+| Store user/project memory | `memory_create_entities`, `memory_add_observations` |
 
-**Parallel tool calls**: make all independent tool calls in the same response block to maximise efficiency.
+**Parallel tool calls**: Make all independent tool calls in the same response block to maximise efficiency. Don't background trivially-fast or dependency-linked tasks — sequential is faster than task overhead.
 
-**Verification gate**: any task touching 3+ files or changing an API/backend MUST be reviewed by `@oracle` (via `task` tool) before reporting completion to the user.
+**Verification gate**: Any task touching 3+ files or changing an API/backend MUST be reviewed by `@oracle` (via `task`) before reporting completion to the user.
 
 ---
 
-## oh-my-opencode-slim Specialists
+## Specialists
 
-oh-my-opencode-slim is installed and provides specialist subagents. Delegate to them via the `task` tool rather than doing all work inline.
+oh-my-opencode-slim is installed. Delegate via `task` rather than doing all work inline. Reuse prior sessions by passing the previous `task_id`; prefer the most recently used matching session to preserve context and reduce cost.
 
 | Agent | When to delegate |
 |---|---|
-| `@explorer` | Codebase discovery, file/symbol search, pattern matching |
-| `@librarian` | External docs, library APIs, web research, version-specific behaviour |
-| `@oracle` | Architecture decisions, complex debugging, code review, simplification strategy |
-| `@designer` | UI/UX work, responsive layouts, visual polish, component design |
-| `@fixer` | Bounded mechanical implementation across multiple files |
+| `@explorer` | Codebase discovery, file/symbol search, pattern matching — delegate before planning (2× faster, half the cost) |
+| `@librarian` | External docs, library APIs, web research, version-specific behaviour — never guess at library behaviour |
+| `@oracle` | Architecture decisions, complex debugging, code review, simplification strategy — do not skip for significant changes |
+| `@designer` | UI/UX work, responsive layouts, visual polish, component design — preserve designer output exactly in follow-up phases |
+| `@fixer` | Bounded mechanical implementation across multiple files — split large changes into parallel bounded lanes |
 
-**Delegation rules:**
-- Delegate discovery to `@explorer` before planning — it is 2× faster and half the cost.
-- Delegate library/API questions to `@librarian` rather than guessing.
-- Delegate code review and architectural risk to `@oracle` — do not skip this for significant changes.
-- Delegate all user-visible UI work to `@designer`; preserve designer output exactly in follow-up phases.
-- Delegate scoped, well-defined implementation to `@fixer`; split large changes into parallel bounded lanes.
-- Never duplicate work already delegated to a running background agent.
+Never duplicate work already delegated to a running background agent.
 
 ---
 
 ## Operational Best Practices
 
-### Background Task Discipline
+### Background Task Discipline & Job Board
 
-When delegating to specialists, use `background: true` for independent work:
+Use `background: true` for independent specialist work. Don't poll — wait for hook-driven completion. If no independent work remains while jobs run, stop and let the completion event resume the workflow. Track each task's agent, purpose, and file ownership to avoid conflicts.
 
-- Launch independent discovery, research, or implementation tasks in the background so the main thread stays unblocked.
-- Do not poll running background tasks or try to consume their output early — wait for the hook-driven completion notification.
-- If no independent work remains while background jobs run, stop and let the completion event resume the workflow.
-- Track each delegated task's agent, purpose, and file ownership to avoid conflicts.
+#### Background Job Board
+SENTINEL: background-job-board-v2
+Do not poll running jobs. Wait for hook-driven completion, or use `cancel_task` only for explicit cancellation. Reconcile terminal jobs before final response.
+Completed or reconciled sessions are reusable by alias for the same specialist/context.
+Timed-out running sessions are recoverable by alias for safe resume after a live busy signal.
+Cancelled or errored sessions are not reusable.
 
-### Specialist Session Reuse
+##### Active / Unreconciled
+- none
 
-When delegating to the same specialist repeatedly, reuse its session to preserve context and reduce cost:
-
-- Pass the previous `task_id` (or Background Job Board alias) to `task()` instead of starting a fresh session.
-- When a specialist already has context from prior work, reuse rather than re-explaining.
-- Prefer the most recently used matching session when multiple options exist.
+##### Reusable Sessions
+- alias / session_id / agent / status
+  Objective: one-line summary of what was done
+  Context read by alias: files read with line counts
 
 ### LSP-Based Validation
 
@@ -255,13 +271,32 @@ bats tests/
 - Run the full test suite (or the relevant test subset) after every implementation phase.
 - Let the exit code and output determine pass/fail — do not skip actual test execution.
 
+### MCP Memory (Persistent Knowledge)
+
+MCP Memory stores persistent knowledge across sessions so the agent doesn't start blank each time.
+
+**Session start — read memory:**
+- `memory_search_nodes` to find user preferences ("preferred tools", "naming conventions", "ssh over pat")
+- `memory_open_nodes` on matched entities to retrieve full observations
+
+**During work — store context:**
+- `memory_add_observations` to append decisions, architecture choices, and project conventions to existing entities
+- `memory_create_entities` for new topics (e.g. a new project's tech stack)
+- `memory_create_relations` to link related knowledge
+
+**What to track:**
+| Entity | Observations to store |
+|---|---|
+| `user-preferences` | Preferred tools, auth methods (SSH > PAT), config patterns, naming style deviations |
+| `project-conventions` | Tech stack, architecture decisions, testing setup, CI choices |
+| `session-decisions` | Root cause fixes, workarounds, library gotchas, why something was done a particular way |
+| `reusable-patterns` | Scripts, workflows, snippets developed that are likely reusable |
+
+**When to write:** After learning something important about the user, after significant architectural decisions, after fixing a tricky bug with a non-obvious root cause, before ending a session.
+
 ### Config Changes Require Restart
 
-opencode loads all configuration at startup and does not hot-reload:
-
-- Changes to `opencode.json`, `oh-my-opencode-slim.json`, agent prompt files, skills, or MCP configs take effect **on the next opencode run**.
-- After editing any config file, restart opencode for the changes to apply.
-- The running session keeps using the already-loaded configuration until then.
+opencode loads all configuration at startup and does not hot-reload: changes to `opencode.json`, `oh-my-opencode-slim.json`, agent prompt files, skills, or MCP configs take effect **on the next opencode run**. After editing any config file, restart opencode for the changes to apply.
 
 ### Error Recovery (Config Escape Hatches)
 
