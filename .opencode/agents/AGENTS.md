@@ -144,7 +144,7 @@ refactor(utils): extract validate_path into separate module
 ## Language Practices
 
 ### Python
-- **Virtual environments** – Always use `venv` or `uv`; never install globally.
+- **Virtual environments** – Always use `conda` (miniconda); never install globally.
 - **Dependency management** – `pyproject.toml` as the single source of truth; pin versions in `requirements.lock` if needed.
 - **Type hints** – Add to all public functions; run `mypy --strict` in CI.
 - **Linting/formatting** – `ruff check` + `ruff format` (replaces flake8/black/isort).
