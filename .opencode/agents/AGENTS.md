@@ -292,7 +292,10 @@ MCP Memory stores persistent knowledge across sessions so the agent doesn't star
 | `session-decisions` | Root cause fixes, workarounds, library gotchas, why something was done a particular way |
 | `reusable-patterns` | Scripts, workflows, snippets developed that are likely reusable |
 
-**When to write:** After learning something important about the user, after significant architectural decisions, after fixing a tricky bug with a non-obvious root cause, before ending a session.
+**Enforcement (critical):** Before delivering your final response in any session where a
+significant decision, architecture choice, or user preference was discussed, call
+`memory_add_observations` to persist it. Do not rely on later sessions to rediscover it.
+A decision that isn't stored in memory effectively never happened for the next session.
 
 ### Config Changes Require Restart
 
